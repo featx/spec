@@ -1,25 +1,32 @@
 plugins {
-    id("groovy")
     id("java")
+    id("groovy")
     id("scala")
     id("org.jetbrains.kotlin.jvm") version "${kotlinVersion}"
     id("maven-publish")
 }
 
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of("${javaVersion}"))
+    }
+}
+
 group "org.featx.spec"
-version "1.0.1-SNAPSHOT"
+version "1.0.0"
 
 repositories {
     mavenCentral()
+
     maven {
-        url = uri("https://packages.aliyun.com/maven/repository/2010689-release-56y7uo")
+        url = uri("${MVN_RELEASE}")
         credentials {
             username = "${MVN_USERNAME}"
             password = "${MVN_PASSWORD}"
         }
     }
     maven {
-        url = uri("https://packages.aliyun.com/maven/repository/2010689-snapshot-bcJ57J/")
+        url = uri("${MVN_SNAPSHOTS}")
         credentials {
             username = "${MVN_USERNAME}"
             password = "${MVN_PASSWORD}"
@@ -29,22 +36,22 @@ repositories {
 
 dependencies {
     /*Compile Time*/
-    compileOnly("javax.servlet:javax.servlet-api:${servletVersion}")
+    compileOnly("jakarta.servlet:jakarta.servlet-api:${servletVersion}")
     compileOnly("org.projectlombok:lombok:${lombokVersion}")
     annotationProcessor("org.projectlombok:lombok:${lombokVersion}")
     /*Common Runtime*/
     implementation("com.google.guava:guava:${guavaVersion}")
     implementation("org.slf4j:slf4j-api:${slf4jVersion}")//TODO compile Only?
     /*JVM language Runtime*/
-    implementation("org.codehaus.groovy:groovy:${groovyVersion}")
+    implementation("org.apache.groovy:groovy:${groovyVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-common")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-js")
-    implementation("org.scala-lang:scala-library:${scalaVersion}")
+    // implementation("org.jetbrains.kotlin:kotlin-stdlib-js")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.scala-lang:scala3-library_3:${scala3Version}")
     /*Test*/
     testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
-    testImplementation("org.scalactic:scalactic_2.13:${scalacticVersion}")
-    testImplementation("org.scalatest:scalatest_2.13:${scalacticVersion}")
+    // testImplementation("org.scalactic:scalactic_2.13:${scalacticVersion}")
+    // testImplementation("org.scalatest:scalatest_2.13:${scalacticVersion}")
     testImplementation("io.mockk:mockk:${mockkVersion}")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 //    testImplementation("org.jetbrains.kotlin:kotlin-test-js")
@@ -58,8 +65,8 @@ tasks.withType(JavaCompile) {
 
 tasks.withType(GroovyCompile) {
     options.encoding = "UTF-8"
-    sourceCompatibility = JavaVersion.VERSION_15
-    targetCompatibility = JavaVersion.VERSION_15
+    sourceCompatibility = "${javaVersion}"
+    targetCompatibility = "${javaVersion}"
 }
 
 tasks.withType(ScalaCompile) {
@@ -68,15 +75,13 @@ tasks.withType(ScalaCompile) {
     targetCompatibility = "${javaVersion}"
 }
 
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
-    kotlinOptions.jvmTarget = "${javaVersion}"
-}
-
-task sourceJar(type: Jar, dependsOn: classes) {
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier.set("sources")
     from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier.set("javadoc")
     from javadoc.destinationDir
 }
 
@@ -85,11 +90,11 @@ publishing {
         maven(MavenPublication) {
             from components.java
 
-            artifact sourceJar {
+            artifact(sourcesJar) {
                 classifier "sources"
             }
 
-            artifact javadocJar {
+            artifact(javadocJar) {
                 classifier "javadoc"
             }
         }
@@ -97,9 +102,9 @@ publishing {
 
     repositories {
         maven {
-            url = uri("https://packages.aliyun.com/maven/repository/2010689-release-56y7uo")
+            url = uri("${MVN_RELEASE}")
             if (project.version.endsWith("SNAPSHOT")) {
-                url = uri("https://packages.aliyun.com/maven/repository/2010689-snapshot-bcJ57J/")
+                url = uri("${MVN_SNAPSHOTS}")
             }
             credentials {
                 username "${MVN_USERNAME}"
